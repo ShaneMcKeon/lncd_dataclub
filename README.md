@@ -7,6 +7,8 @@ For data club materials: Please create a new directory titled *topic_date_initia
 
 For code review: ? 
 
+**LOOKING TO SIGN UP?! Look no further, friend: https://tinyurl.com/lncd-data-code-club**
+
 ## Getting started with the repo
 
 To get acess to this github repo and all of its contents, you can clone the repo to your computer
