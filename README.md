@@ -3,7 +3,7 @@
 
 This is a central location for presentations given as part of our data club series (data_club) or code + files shared and reviewed as part of our biweekly code review (code_review).
 
-For data club materials: Please create a new directory titled topic_date_initials in the most relevant folder in data_club, and put your materials there. For example: data_club/neuroimaging_methods/myelinimaging_sept2024_vjs
+For data club materials: Please create a new directory titled *topic_date_initials* in the most relevant folder in data_club, and put your materials there. For example: data_club/neuroimaging_methods/myelinimaging_sept2024_vjs
 
 For code review: ? 
 
