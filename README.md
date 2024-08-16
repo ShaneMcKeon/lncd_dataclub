@@ -2,6 +2,8 @@
 **A repository for the Laboratory of Neurocognitive Development's code review and data club!**
 
 This is a central location for presentations given as part of our data club series (data_club) or code + files shared and reviewed as part of our biweekly code review (code_review).
+For data club materials: Please create a new directory titled <topic>_<date>_<initials> in the most relevant folder in data_club, and put your materials there. For example: data_club/neuroimaging_methods/myelinimaging_sept2024_vjs
+For code review: ? 
 
 ## Getting started with the repo
 
@@ -15,7 +17,7 @@ git clone https://github.com/LabNeuroCogDevel/lncd_dataclub.git #using web url
 
 ## Adding files to the repo
 
-Want to upload code or files to the repo so others can access it? Add the files to your lncd_dataclub directory (local clone) and then send them to the "remote" repo for everyone to access
+Want to upload code or files to the repo so others can access them? Put the files in your lncd_dataclub directory (local clone) and then send them to the "remote" repo for everyone to access.
 
 ```
 mv my_elegant_code.sh lncd_dataclub/code_review #lets get the files you want to share into your local clone
