@@ -88,10 +88,11 @@ After `gh` is installed ([help](#install-gh-helper-program)) and ssh keys are se
 ```sh
 # get remote data locally
 git clone git@github.com:LabNeuroCogDevel/lncd_dataclub.git
-
-# make a local fork on github using gh
 cd lncd_dataclub
-gh repo fork --remote
+
+git config push.autoSetupRemote true               # dont complain about making branches
+gh repo fork --remote                              # create a personal fork
+gh repo set-default LabNeuroCogDevel/lncd_dataclub # but default pr/issues on shared
 ```
 
 Congrats on finishing the setup. You may want to jump to instructions for [Data Club](#data-club) or [Code Review](#code-review).
@@ -168,4 +169,4 @@ gh pr create --fill                  # 6. create pull request to upstream LNCD g
 
 You can follow the github URL printed out by `gh pr create` to see reviews and annotations others submit.
 
-NB. See `git branch` to see the current branch. Use `git checkout -b main` to get back to the main branch
+NB. See `git branch` to see the current branch. Use `git switch main` to get back to the main branch
