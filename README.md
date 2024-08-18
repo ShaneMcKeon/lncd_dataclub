@@ -25,10 +25,10 @@ For more explict commands jump to [Data Club](#data-club).
 
 You'll need this repo `clone`d locally. Jump to [Repo Setup](#repo-setup) for that.
 
-  1. add code to a folder like `code_review/yyymmdd_intials`
-  1. create a new branch
+  1. create a new branch like `yyyymmdd_yourinitials`
+  1. add code to a folder like `code_review/yourintials/`
   1. push to your local fork
-  1. submit a pull request
+  1. submit a pull request on `LabNeuroCogDevel/lncd_dataclub` remote
   1. look at the reviews
 
 For more explict commands jump to [Code Review](#code-review).
@@ -158,10 +158,10 @@ cd lncd_dataclub                     # 0.1 enter repo on local computer
 git pull upstream                    # 0.2 make sure we're up to date 
 git checkout -b 20240817_wf          # 1. create a new branch
                                      # 2. add files to review
-mkdir code_review/20240817_wf/
-cp code-to-review.R  code_review/20240817_wf/
+mkdir code_review/wf/
+cp code-to-review.R  code_review/wf/
 
-git add code_review/20240817_wf/*    # 3. tell git about those files
+git add code_review/wf/*             # 3. tell git about those files
 git commit -m 'sus code does x'      # 4. annotate addition
 git push origin                      # 5. send changes to your github.com fork
 gh pr create --fill                  # 6. create pull request to upstream LNCD github repo
@@ -169,4 +169,4 @@ gh pr create --fill                  # 6. create pull request to upstream LNCD g
 
 You can follow the github URL printed out by `gh pr create` to see reviews and annotations others submit.
 
-NB. See `git branch` to see the current branch. Use `git switch main` to get back to the main branch
+NB. Use `git branch` to see the current branch. Use `git switch main` to get back to the main branch
