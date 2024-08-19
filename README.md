@@ -36,6 +36,12 @@ For more explict commands jump to [Code Review](#code-review).
 ----  
 
 ## Git help
+### Getting a terminal
+Terminal is your chat window with the computer.
+
+  * **macOS**: use the built in `Terminal` app. Alternatively, `brew install --cask wezterm` or `brew install --cask iterm2`
+  * **Windows**: use `Git Bash` (also from explorer context menu `Git Bash Here`) bundled with [the official git download](https://git-scm.com/download/win). NB. check "Enable experimental support for pseudo consoles" or you'll need to use `winpty gh ...` for interactive prompts.
+  * **Linux**: likely to have `gnome-terminal`,`konsole`, or `xterm` already
 
 ### Getting started with the repo
 
@@ -56,11 +62,22 @@ brew install gh
 # on linux (quick and dirty, no man page; 2024-08-17)
 curl -L https://github.com/cli/cli/releases/download/v2.54.0/gh_2.54.0_linux_amd64.tar.gz |
   tar -C ~/bin/ --strip-components=2 -wildcards -tvzf - '*/bin/gh'
+
 ```
+
+On windows:
+ 1. download the exe from https://cli.github.com and install
+ 2. close and relaunch any open "Git Bash Here" from file browser context menu
 
 Then authenticate
 ```sh
 gh auth login
+```
+
+On windows (e.g. file browser context menu `Git Bash Here`), you need to prefix the command with `winpty`
+
+```sh
+winpty gh auth login
 ```
 
 
@@ -165,6 +182,7 @@ git add code_review/wf/*             # 3. tell git about those files
 git commit -m 'sus code does x'      # 4. annotate addition
 git push origin                      # 5. send changes to your github.com fork
 gh pr create --fill                  # 6. create pull request to upstream LNCD github repo
+                                     #    on Windows, prefix cmd with: winpty
 ```
 
 You can follow the github URL printed out by `gh pr create` to see reviews and annotations others submit.
