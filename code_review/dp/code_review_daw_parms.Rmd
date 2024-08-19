@@ -1,0 +1,280 @@
+---
+title: "code_review_daw_parms"
+author: "Daniel Petrie"
+date: "2024-08-16"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+Packages/WD/DATA
+
+```{r}
+library("ggplot2") #For plotting
+library("GGally") #ggpairs()
+library("tidyverse") #Wranglin
+library("dplyr") #Wranglin
+library("lme4") #MLM
+library("lmerTest") #p-vals
+library("ggeffects") #For marginal/conditional effects plots
+#library("margins") #For margins() function. Useful for comparing margins from ggeffects
+library("marginaleffects") #For hypothesis_test()
+library("mgcv") #GAMM
+library("LNCDR") #waterfall plot, lunaize plots 
+library("gratia") #mgcv companion package. Using draw among other funcs.
+library("psych") #Descriptives
+
+#Working directory (change to something better)
+setwd("C:/Users/djpet/Documents/tutorials/code_review")
+
+#Beh DAW files /Volumes/Hera/Dan/daw/analysis/txt
+luna_7t <- read.csv("luna_7tbrainmech.csv", header = TRUE)
+luna_pet <- read.csv("luna_pet.csv", header = TRUE)
+```
+
+
+Cleaning behavioral Daw data.
+
+
+```{r Daw Cleaning}
+#Separating id column into "id" and "visit". Changing vdate to date format, and adding trial number.
+luna_7t <- luna_7t %>%
+  separate(id, c("id", "vdate")) %>%
+  mutate(vdate = as.Date(vdate, format = "%Y%m%d")) %>% 
+  group_by(id, vdate) %>%
+  mutate(trial = row_number())
+
+luna_pet <- luna_pet %>%
+  separate(id, c("id", "vdate")) %>%
+  mutate(vdate = as.Date(vdate, format = "%Y%m%d")) %>% 
+  group_by(id, vdate) %>%
+  mutate(trial = row_number())
+
+#Adding scanner information
+luna_7t$study <- "7t"
+luna_pet$study <- "PET"
+
+#Combining data.
+luna_all <- bind_rows(luna_7t, luna_pet)
+```
+
+
+Subjects can be enrolled in both studies. I want to check how many subjects were in both studies and if there are any dulpicate entries.
+
+
+```{r Duplicate Data Check}
+#Seeing how many subjects have data in both studies.
+same_ids <- intersect(luna_7t$id, luna_pet$id)
+same_ids #Spolier: 11565 is duplicated. All others have different dates.
+
+#Checking for duplicates and 
+df.dups <- luna_all %>% mutate(uniq_id=paste(id,vdate,trial), isdup=duplicated(uniq_id))
+
+# check duplicates -- includes original and duplicated rows
+any_dups <- df.dups %>% filter(uniq_id %in% unique(df.dups$uniq_id[df.dups$isdup]))
+
+# remove dups
+df.nodups <- df.dups %>% filter(!isdup)
+
+
+# compute visit number
+df.nodups <- df.nodups %>% 
+  group_by(id) %>% 
+  mutate(visitnum = dense_rank(vdate))
+
+#Rename to something less vague and remove columns that are not used
+luna_final <- df.nodups %>% select(-uniq_id, -isdup)
+```
+
+
+There are also trials where subjects did not respond during the 1st or 2nd stage. As per Decker et al., (2016), these trials are removed.
+
+It's beyond the scope of this tutorial, but it is worth checking to see whether younger subjects have more missing trials than older subjects.
+
+```{r Missing Trials Check}
+table(luna_final$choice1, luna_final$choice2)
+#925 trials where subjects did not chose anything.
+#230 trials where choice1 = 1 and no choice on stage 2.
+#221 trials where choice1 = 2 and no choice on stage 2.
+
+#Alternative way to check
+#luna_final %>% filter(choice1 == 1 & choice2 == 0)
+
+#Sanity check
+1376/83400 #1.6% missing! Not too shabby.
+
+83400-1376 #Looking for 82,024
+
+
+#Removing trials where subject did not respond during 1st or second stage
+luna_final <- luna_final %>%
+  filter(!(choice1 == 0 | choice2 == 0))
+```
+
+
+Preprocessing involves creating lagged variables that reflect choices on previous trials. These variables become predictors and outcomes in the logistic regression model. 
+
+
+```{r Preprocessing Behavioral Data}
+#Creating lagged variables. Add trial
+luna_final <- luna_final %>% 
+  group_by(id, visitnum) %>% 
+  mutate(choice1lag = lag(choice1),
+         choice2lag = lag(choice2),
+         statelag = lag(state),
+         moneylag = lag(money))
+
+# transitional variables
+luna_final <- luna_final %>% 
+  mutate(commonrare = as.factor(ifelse((choice1lag == 1 & statelag == 2) |
+                                         (choice1lag == 2 & statelag == 3),
+                                       'common', 
+                                       'rare')), 
+         commonraredummy = ifelse(commonrare=="common", 
+                                  1, 
+                                  -1), 
+         moneylagdummy = ifelse(moneylag == 1, 
+                                1, 
+                                -1), 
+         firststagestay = ifelse(choice1 == choice1lag, 
+                                 1, 
+                                 0), 
+         stayswitchwinlose = ifelse(firststagestay==1 & moneylag==0, 'lose-stay',
+                             ifelse(firststagestay==1 & moneylag==1, 'win-stay', 
+                                    ifelse(firststagestay==0 & moneylag==0,
+                                           'lose-switch', 
+                                           'win-switch'))))
+```
+
+Creating Daw variables from the logistic regression involves a few steps.
+
+1. Fit ML Log-Reg model
+2. Extract fixed and random effects
+3. Add fixed effects to random effects to create MB/MF/FSS scores
+
+FSS: The fixed intercept plus the random intercept
+
+MF: The fixed main effect of reward plus the random effect of reward
+
+MB: The fixed interaction effect of reward and transition type plus the random effect of reward and transition type 
+
+
+```{r ML Logistic Regression Model}
+# models
+intmodeltoplot <- glmer(firststagestay ~ 1 + commonraredummy*moneylagdummy + 
+                          (commonraredummy*moneylagdummy|id:visitnum),
+                        data=luna_final,
+                        family="binomial",
+                        glmerControl(optimizer = "bobyqa"))
+summary(intmodeltoplot)
+
+#Marginal effect: Common vs Rare
+cr_me <- ggpredict(intmodeltoplot, terms = "commonraredummy")
+ggplot(cr_me, 
+       aes(x = as.factor(x), 
+           y = predicted)) + 
+  geom_point(size = 3) + 
+  geom_errorbar(aes(ymin = conf.low, 
+                    ymax = conf.high), 
+                width = 0.2) +
+  labs(title = "Main effect of tranistion type",
+    x = "Transition Type",
+    y = "Probability of FSS") +
+   scale_y_continuous(labels = scales::percent) +
+  theme_modern()
+
+#Marginal effect: Reward
+rew_me <- ggpredict(intmodeltoplot, terms = "moneylagdummy")
+ggplot(rew_me, 
+       aes(x = as.factor(x), 
+           y = predicted)) + 
+  geom_point(size = 3) + 
+  geom_errorbar(aes(ymin = conf.low, 
+                    ymax = conf.high), 
+                width = 0.2) +
+  labs(title = "Main effect of reward",
+    x = "Rewarded",
+    y = "Probability of FSS") +
+   scale_y_continuous(labels = scales::percent) +
+  theme_modern()
+
+#Marginal effect: Reward x Transition Type
+cr_rew_me <- ggpredict(intmodeltoplot, terms = c("moneylagdummy", "commonraredummy"))
+ggplot(cr_rew_me, 
+       aes(x = as.factor(x), 
+           y = predicted,
+           group = group,
+           colour = group)) + 
+  geom_point(size = 3) + 
+  geom_errorbar(aes(ymin = conf.low, 
+                    ymax = conf.high), 
+                width = 0.2) +
+  labs(title = "Transition type x reward interaction",
+    x = "Reward",
+    y = "Probability of FSS") +
+   scale_y_continuous(labels = scales::percent) +
+  scale_color_discrete(name = "Transition Type") +
+  theme_modern()
+```
+
+Fun!
+
+
+Extract fixed and random effects. Then, add fixed effects to random effects to create MB/MF/FSS scores
+
+
+```{r Extract Fixed and Random Effects}
+#Extracting random effects
+dawranefint <- ranef(intmodeltoplot)
+head(dawranefint$`id:visitnum`)
+
+#Extracting fixed effects
+dawfixedeffectsint <- summary(intmodeltoplot)$coefficients
+dawfixedeffectsint
+
+#Creating dataframe consisting of MB/MF/Habit parameter.
+dawsubjecterms <- data.frame(
+  idtemp = row.names(dawranefint$`id:visitnum`), 
+  modelbased = dawranefint$`id:visitnum`$`commonraredummy:moneylagdummy` + 
+    dawfixedeffectsint[4,1], 
+  modelfree = dawranefint$`id:visitnum`$moneylagdummy + 
+    dawfixedeffectsint[3,1],
+  commonrare = dawranefint$`id:visitnum`$commonraredummy + 
+    dawfixedeffectsint[2,1],
+  firststagestay = dawranefint$`id:visitnum`$`(Intercept)` + 
+    dawfixedeffectsint[1,1])
+  
+#Create id column
+dawsubjecterms$id <- unlist(lapply(strsplit(as.character(dawsubjecterms$idtemp),
+                                            ":"),'[',1))
+#Create visitnum column
+dawsubjecterms$visitnum <- unlist(lapply(strsplit(as.character(dawsubjecterms$idtemp),
+                                                  ":"),'[',2))
+#Checking
+head(dawsubjecterms)
+```
+
+
+Merging to final data set for analyses.
+
+
+```{r Merging daw subject terms with }
+# Selecting variable. Doing explicitly to reorder
+dawsubjecterms_merge <- dawsubjecterms %>% dplyr::select(id, visitnum, modelbased, 
+                                         modelfree, commonrare, firststagestay) 
+
+
+#Removing trial level data from luna_final
+luna_final_merge <- luna_final %>% dplyr::select(id, visitnum, vdate, study) %>% distinct()
+
+
+#Merging date information with daw subject terms
+daw_data <- merge(dawsubjecterms_merge, luna_final_merge, by = c("id", "visitnum"))
+```
+
+GGpairs
+
+```{r}
+ggpairs(daw_data[,c("modelbased", "modelfree", "firststagestay")])
+```
+
