@@ -46,6 +46,18 @@ print(p)
 #+RESULTS[9d445535cb867cce818f5d427881e140b28a8600]:
 [[file:imgs/timeline.png]]
 
+* Getting started
+
+#+begin_src bash
+cd /Volumes/Hera/$YOURDIR
+git clone git@github.com:LabNeuroCogDevel/lncd_dataclub
+cd lncd_dataclub/data_club/20240919_terminal_ide_wf
+#+end_src
+
+ * NB: use tab-tab to complete the last path!
+ * review: are those paths absolute or relative?
+ * review: which is root =~= or =/=?
+
 * Shell w/Readline
 readline keyboard commands (described below) are implemented or imitated in many places. bash, matlab, R, python, etc
 
@@ -103,7 +115,21 @@ https://support.apple.com/guide/terminal/change-profiles-keyboard-settings-trmlk
    * default editor:  ~git commit~
 #+COMMENT:  * vim is vi improved. neovim is modernization effort. other editors have emulation mode
 
+** launching
+#+begin_src bash
+# cd /Volumes/Hera/$YOURDIR
+# git clone git@github.com:LabNeuroCogDevel/lncd_dataclub
+cd lncd_dataclub/data_club/20240919_terminal_ide_wf
+vim demo.R
+#+end_src
 ** motions
+| =h= =j= =k= =l= | ← ↑↓ →                     |
+| =w= =b=         | forward/back word            |
+| =e= =ge=        | forward/back word boundary   |
+| =W= =B=         | forward continuous "Word(){" |
+| =)= =(=       |    f/b       paragraph       |
+| =}= ={=       |    f/b       paragraph       |
+| =/= | start search |
 ** edits
 ** plugin: ALE
 ** demo
