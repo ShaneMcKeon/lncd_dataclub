@@ -1,7 +1,8 @@
-#+TITLE: Terminal as IDE
-#+OPTIONS: reveal_single_file:t
+#+TITLE: Terminal Editing
+#+OPTIONS: reveal_single_file:t toc:1
 #+REVEAL_ROOT+ignore: https://cdn.jsdelivr.net/npm/reveal.js
 #+REVEAL_VERSION+ignore: 5.1.0
+#+MACRO: a @@html: <span class="fragment" data-fragment-index="$2">$1</span>@@
 
 * Front matter                                                 :noexport:
 
@@ -48,7 +49,7 @@ print(p)
 
 * Getting started
 
-#+begin_src bash
+#+begin_src bash :eval never
 cd /Volumes/Hera/$YOURDIR
 git clone git@github.com:LabNeuroCogDevel/lncd_dataclub
 cd lncd_dataclub/data_club/20240919_terminal_ide_wf
@@ -59,85 +60,226 @@ cd lncd_dataclub/data_club/20240919_terminal_ide_wf
  * review: which is root =~= or =/=?
 
 * Shell w/Readline
-readline keyboard commands (described below) are implemented or imitated in many places. bash, matlab, R, python, etc
+readline keyboard commands are implemented or imitated in many places.
 
-*** Movements
- | =C-a=              | cursor to start of line |
- | =C-e=              | cursor to end of line   |
- | =M-b= or =M-left=  | back word               |
- | =M-f= or =M-right= | forward word            |
- [[file:imgs/readline_move.gif]]
+MacOS uses them for it's own text boxes!
 
-*** Deleting (Cut or "kill")
- | =C-w= | delete word back         |
- | =M-Backspace= | delete chars back   |
- | =M-d= | delete word forward      |
- | =C-u= | delete all before cursor |
- | =C-k= | delete all after cursor  |
+Default in most REPLs: bash, matlab, R, python
+
+** Misc notes
+  * can push enter with cursor anywhere on line
+  * middle mouse button to paste with mouse cursor anywhere
+
+** MacOS Terminal: Option as Meta
+ Terminal > Settings > Profiles > keyboard: "Option as Meta"
+
+https://support.apple.com/guide/terminal/change-profiles-keyboard-settings-trmlkbrd/mac
+
+
+** Setup
+type this
+#+begin_src bash :eval never
+3dUndump -prefix atlas.nii.gz -overwrite -dimen 10 10 10 -srad 2  -ijk xyz_v.txt
+#+end_src
+
+** Movements
+ | =C-a=              | {{{a(cursor to start of line,0)}}} |
+ | =C-e=              | {{{a(cursor to end of line,1)}}} |
+ | =M-b= or =M-left=  | {{{a(back word,2)}}} |
+ | =M-f= or =M-right= | {{{a(forward word,3)}}} |
+[[file:imgs/readline_move.gif]]
+
+** Deleting (Cut or "kill")
+ | =C-w= | {{{a(delete word back,0)}}} |
+ | =M-Backspace= | {{{a(delete chars back,1)}}} |
+ | =M-d= | {{{a(delete word forward,2)}}} |
+ | =C-u= | {{{a(delete all before cursor,3)}}} |
+ | =C-k= | {{{a(delete all after cursor,4)}}} |
  [[file:imgs/readline_delete.gif]]
 
-*** Pasting (Yank)
- | =C-y=     | paste (yank from kill-ring) |
- | =M-y=     | cycle kill-ring             |
- | =C-/=     | undo                        |
+** Pasting (Yank)
+ | =C-y=     | {{{a(paste (yank from kill-ring),1)}}} |
+ | =M-y=     | {{{a(cycle kill-ring,2)}}}      |
+ | =C-/=     | {{{a(undo,3)}}}                  |
  [[file:imgs/readline_yank_undo.gif]]
 
-*** Esoteric
+** Esoteric
  | =C-M-] x= | cursor back to char =x=   |
  | =C-x C-e= | open line in =$EDITOR=    |
  [[file:imgs/readline_tochar_external.gif]]
 
-*** Shell
+** Shell
  | =up=      | previous history        |
  | =C-r=     | history search          |
  | =M-.=     | last argument           |
  | =M-2 M-.= | second to last argument |
 
+** Demo 1
+  * Hints: =C-w= , =C-y= =M-y=, =M-2= =M-.=
+#+begin_src bash :eval never
+echo -e "3 3 3 1\n8 0 0 2" > xyz_v.txt
+3dUndump -prefix atlas.nii.gz -overwrite -dimen 10 10 10 -srad 2  -ijk xyz_v.txt
+# tab complete atlas...or use M-# with last arg
+3dinfo -ad3 atlas.nii.gz
+3dinfo -ad3 atlas.nii.gz -space
+# ERROR. up, del word, back word, yank
+3dinfo -ad3 -space atlas.nii.gz
+# use prev arg or M-.
+3dROIstats -make atlas.nii.gz atlas.nii.gz
 
-*** Misc notes
-  * can push enter with cursor anywhere on line
-  * middle mouse button to paste with mouse cursor anywhere
+3dcalc  -prefix mask.nii.gz  -expr 'step(m)' -m atlas.nii.gz
+#+end_src
 
-*** MacOS Terminal: Option as Meta
- Terminal > Settings > Profiles > keyboard: "Option as Meta"
+** Demo 2
+  * Hints: =C-w= , =C-y= =M-y=,  (=M-2=) =M-.=
+#+begin_src bash :eval never
+# use killring
+3dinfo -n4 mask.nii.gz
+3dinfo -n4 atlas.nii.gz # up, kill, a+tab
+3dNotes atlas.nii.gz   # up, kill, yank, cycle
 
-https://support.apple.com/guide/terminal/change-profiles-keyboard-settings-trmlkbrd/mac
+# history search 3dUdump, start of line, forward 2 words kill
+3dUndump -prefix atlas2.nii.gz -overwrite -dimen 10 10 10 -srad 2  -ijk xyz_v.txt
+#+end_src
 
 * vim
 [[file:imgs/vi-overview.svg]]
 
 ** Why
-  * **grammar of editing**
-    * [[https://missing.csail.mit.edu/2020/editors/][MIT lecture]] says "interface is a programming language"
+  * powerful and efficient
+    * modal interface ideal for jumping around
+    * **grammar of editing**
+      * [[https://missing.csail.mit.edu/2020/editors/][MIT lecture]]: "interface is a programming language"
   * ubiquity
-   * =vi= is POSIX -- will exist on most any ssh server
-   * all text. no X11 forwarding needed
-   * default editor:  ~git commit~
+    * =vi= is POSIX -- will exist on most any ssh server
+    * all text. no X11 forwarding needed
+    * default editor:  ~git commit~
+    * lindy effect (it'll stick around b/c it's been around)
 #+COMMENT:  * vim is vi improved. neovim is modernization effort. other editors have emulation mode
 
 ** launching
 #+begin_src bash
-# cd /Volumes/Hera/$YOURDIR
-# git clone git@github.com:LabNeuroCogDevel/lncd_dataclub
-cd lncd_dataclub/data_club/20240919_terminal_ide_wf
+# cd /Volumes/Hera/$YOURDIR/lncd_dataclub/data_club/20240919*
 vim demo.R
 #+end_src
-** motions
-| =h= =j= =k= =l= | ← ↑↓ →                     |
-| =w= =b=         | forward/back word            |
-| =e= =ge=        | forward/back word boundary   |
-| =W= =B=         | forward continuous "Word(){" |
-| =)= =(=       |    f/b       paragraph       |
-| =}= ={=       |    f/b       paragraph       |
-| =/= | start search |
+
+** quitting
+Type this sequence:
+
+~Esc~ ~:~ ~quit~
+
+(And then push up+enter when returned to shell to get back into vim)
+
+~:wq~ is quick "write" and "quit"
+
+** getting help
+ * =:help i= ( then =:q= to close help buffer)
+ * =:h :q= ( then =:q= to close help buffer)
+ * =vimtutor= -- as shell command to run tutor
+
+** Modal
+Start in normal mode.
+Watch the bottom of the screen for mode indication
+| =Esc=                        | return to normal mode (noop in normal mode) |
+| =i=, =a=, =o=, =O=, =I=, =A= | normal to insert|
+| =v=, =V=, =C-v=              | normal to visual|
+| =:=                          | command mode    |
+
+*** insert mode
+Try each of these, typing something, then =Esc= back to normal mode and =u= to undo what you typed.
+|=i= | {{{a(insert before cursor,1)}}}|
+|=a= | {{{a(insert after cursor,2)}}}|
+|=I= | {{{a(insert start line,3)}}}|
+|=A= | {{{a(insert end of line,4)}}}|
+|=o= | {{{a(insert w/ new line,5)}}}|
+|=O= | {{{a(insert w/ new line above,6)}}}|
+
+
+** Motions 1
+=Esc= back into normal mode. try these
+| =h=, =j=, =k=, =l= | {{{a(← ↑↓ →,1)}}}         |
+| =w=, =b=        | {{{a(forward/back word,2)}}} |
+| =e=, =ge=       | {{{a(forward/back word boundary,3)}}} |
+| =W=, =B=        | {{{a(forward continuous "Word(){",4)}}} |
+| =^=, =$=      |    {{{a(start or end of line, 5)}}} |
+| =)=, =(=      |    {{{a(f/b       sentince,6)}}} |
+| =}=, ={=      |    {{{a(f/b       paragraph,7)}}} |
+
+** Motions 2
+| =f z= | with cursor on line 6 {{{a(start search,1)}}} |
+| =F o= | with cursor on line 6 {{{a(start search,2)}}} |
+| =/ out= | {{{a(start search,3)}}} |
+| =n= =N= | (paired with above) {{{a(start search,3)}}} |
+| =:5= |{{{a(go to line 5,4)}}} |
+| =gg= |{{{a(go to top,5)}}} |
+| =G= |{{{a(go to bottom,6)}}} |
+| =%= | start w/cursor on ({['" or < {{{a(go to pair,7)}}} |
+
+** Single shot
+
+
+| =r= | replace (single char)|
+| =x=, =X= | delete single character |
+
 ** edits
+
+edit commands are pared with motions. ~d$~ deletes to end of line
+
+| =d= | delete |
+| =c= | compose/change |
+| =p=, =P= | paste |
+
+and optionally context: ~caw~ for "change around word"
+
+| =i= | inside |
+| =a= | around |
+
+
+** Demo 1
+  * =/zbu ENTER ci' FIZZ Esc u=
+  * =vi' ~ u=
+  * =ca{ ~ return(1) Esc u=
+  * =dd u=
+  * =D u=, =C foobar Esc u=
+  * =gg dG u=
+
+ * Why need escape after =ci'= , =ci{= , =C=
+ * What does doubling a letter motion do?
+ * cap vs lower case?
+
+** Demo 2
+  * =:8 dd p=
+  * =:6 ci[ x==4 u=
+  * =da[ u=
+  * =:4 f{ % %=
+
+
+
+** Plugins
+get the lncd ones
+#+begin_src bash
+cp ~lncd/.vimrc ~/
+ln -s ~lncd/.vim  ~/
+
+vim # :PlugInstall :q
+vim demo.R
+#+end_src
+
+** plugin: surround
+ * ~6gg~ or ~:6~ and then ~cs"'~
+
 ** plugin: ALE
-** demo
+catch erros as you type them!
+** plugin: NvimR
+ * =\rf=
+ * =\d=
+ * =C-w= =C-w=
+
 ** using outside of vim
 
   * bash: =set -o vi=
   * zsh: =bindkey -v=
-* tmux
 
-* resource files
+* COMMENT tmux
+* COMMENT resource files
   * .bashrc .vimrc .tmux.conf
